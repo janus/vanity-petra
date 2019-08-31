@@ -1,28 +1,59 @@
 /* eslint-env worker */
-const secp256k1 = require('secp256k1');
 const keccak = require('keccak');
 const randomBytes = require('randombytes');
+let bls_ = require('./bls/bls');
+
+
+let global = undefined;
+
 
 const step = 500;
 
 /**
  * Transform a private key into an address
- */
-const privateToAddress = (privateKey) => {
-    const pub = secp256k1.publicKeyCreate(privateKey, false).slice(1);
-    return keccak('keccak256').update(pub).digest().slice(-20).toString('hex');
-};
+ */ 
+const privateToPublic = p => bls_.BonehLynnShacham.generatePublicKey(bls_.Scalar.fromBuffer(p));
+const privateToAddress = p => keccak('keccak256').update(p.s.slice(1)).digest().slice(-20).toString('hex');
 
 /**
  * Create a wallet from a random private key
  * @returns {{address: string, privKey: string}}
  */
-const getRandomWallet = () => {
-    const randbytes = randomBytes(32);
-    return {
-        address: privateToAddress(randbytes).toString('hex'),
-        privKey: randbytes.toString('hex')
-    };
+
+const getRandomWallet = async () => {
+    let randbytes, X = 0;
+    let pub;
+    if(global) {
+        do { 
+            console.log(`Attempt ${X}`); X = X + 1;
+            randbytes = randomBytes(32); 
+            pub = privateToPublic(randbytes);
+        } while (!pub.isValid());
+        return {
+            address: privateToAddress(pub),
+            privKey: randbytes.toString('hex')
+        };
+    } else {
+        try {
+            await bls_.ensureReady();
+            global = 1;
+            do { 
+                console.log(`Attempt ${X}`); X = X + 1;
+                randbytes = randomBytes(32);
+                pub = privateToPublic(randbytes);
+            } while (!pub.isValid());
+
+            return {
+                address: privateToAddress(pub),
+                privKey: randbytes.toString('hex')
+            };
+
+        } catch(err) {
+            console.log("Error from init" + err)
+        }
+
+    }
+
 };
 
 /**
@@ -76,9 +107,9 @@ const toChecksumAddress = (address) => {
  * @param cb - Callback called after x attempts, or when an address if found
  * @returns
  */
-const getVanityWallet = (input, isChecksum, isSuffix, cb) => {
+const getVanityWallet = async (input, isChecksum, isSuffix, cb) => {
     input = isChecksum ? input : input.toLowerCase();
-    let wallet = getRandomWallet();
+    let wallet = await getRandomWallet();
     let attempts = 1;
 
     while (!isValidVanityAddress(wallet.address, input, isChecksum, isSuffix)) {
@@ -86,7 +117,7 @@ const getVanityWallet = (input, isChecksum, isSuffix, cb) => {
             cb({attempts});
             attempts = 0;
         }
-        wallet = getRandomWallet();
+        wallet = await getRandomWallet();
         attempts++;
     }
     cb({address: '0x' + toChecksumAddress(wallet.address), privKey: wallet.privKey, attempts});

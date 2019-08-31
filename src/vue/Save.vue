@@ -19,7 +19,7 @@
 <script>
     import 'remodal/src/remodal';
     import 'randombytes';
-    import * as download from 'downloadjs';
+    import download from 'downloadjs';
 
     import {v4} from 'uuid';
     import CryptoJS from 'crypto-js';

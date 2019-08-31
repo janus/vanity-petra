@@ -69,6 +69,11 @@ module.exports = {
 			from: 'src/assets/images/favicon.ico',
 			to: '.',
 			toType: 'dir'
+		}]),
+		new CopyWebpackPlugin([{
+			from: 'src/js/bls/pairing_bg.wasm',
+			to: '.',
+			toType: 'dir'
 		}])
 	]
 };

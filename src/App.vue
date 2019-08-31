@@ -196,7 +196,7 @@
                 // Estimate number of cores on machine
                 let cores = 0;
                 try {
-                    cores = parseInt(navigator.hardwareConcurrency, 10);
+                    cores = 1; // parseInt(navigator.hardwareConcurrency, 10);
                 } catch (err) {
                     console.error(err);
                 }

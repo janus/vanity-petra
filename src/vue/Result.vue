@@ -18,7 +18,7 @@
 </template>
 
 <script>
-    import * as blockies from 'blockies';
+    import blockies from 'blockies';
 
     export default {
         props: {
